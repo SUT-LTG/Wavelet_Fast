@@ -13,6 +13,38 @@ from astropy.io import fits
 from scipy import stats
 
 #-----------------------------------------------------------------
+#---------------------- Pre-Processing ---------------------------
+#-----------------------------------------------------------------
+
+
+def preprocess(name,filename,crop_cor = []):
+    path = str(pathlib.Path(__file__).parent.resolve())
+    #------------------------------
+    #-- Retrieving observational data
+    #------------------------------
+    outname = 'Output/'+name+'/'+name+'_'
+    adata = fits.open(path+'\\data\\'+filename)
+    a = adata[0].data
+    #------------------------------
+    #-- Cropping and zero padding
+    #------------------------------
+    if crop_cor != []:
+        a=a[crop_cor[0][0]:crop_cor[0][1],crop_cor[1][0]:crop_cor[1][1]]
+
+    kont = np.array(a.astype(float))
+    kont = kont/np.max(kont)  # Normalize to 1
+
+    plt.imshow(kont)
+    plt.colorbar()
+    plt.show()
+
+    ny = kont[0,:].size
+    nx = kont[:,0].size
+    kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='constant') 
+
+    return kont,outname,nx,ny # Returns the final map and the save path
+
+#-----------------------------------------------------------------
 #---------------------- The Pet-Hat function ---------------------
 #-----------------------------------------------------------------
 
@@ -32,7 +64,13 @@ def pethat_phi_func(data,a_scale):
             val_map[i][j] = pethat_k(np.sqrt((i-nx/2)**2 + (j-ny/2)**2)*a_scale)
     return val_map
 
-def pethat_wavelet_scale_analysis(kont,outname, n = 100):
+#-----------------------------------------------------------------
+#--------------------- Wavelet Scale Analysis --------------------
+#-----------------------------------------------------------------
+
+def pethat_wavelet_scale_analysis(kont,outname,nx,ny, n = 100 , dosum = False):
+
+    path = str(pathlib.Path(__file__).parent.resolve())
 
     fft_shape = 2*np.array(kont.shape) - 1
     fft_kont = scipy.fft.fftshift(scipy.fft.fft2(kont,fft_shape))
@@ -44,7 +82,7 @@ def pethat_wavelet_scale_analysis(kont,outname, n = 100):
     sums = np.zeros((nx,ny))
     wavelet_coeffs = np.clongdouble(np.zeros((n,nx,ny)))
 
-    with alive_bar(n) as bar:
+    with alive_bar(n) as bar: 
         for i in range(n):
             a = en_scales[i] * coeff
             map1 = scipy.fft.ifft2(scipy.fft.ifftshift(fft_kont*pethat_phi_func(fft_kont,a)))
@@ -53,7 +91,7 @@ def pethat_wavelet_scale_analysis(kont,outname, n = 100):
             wavelet_coeffs[i] = map1
             map1 = np.real(map1)
             #map1 = map1 * np.heaviside(map1,0)
-            if (i<=80 and 2<i) or True:
+            if dosum == True:
                 sums += map1 
             plt.imshow(map1, origin='lower', interpolation='nearest')
             plt.colorbar()
@@ -61,135 +99,55 @@ def pethat_wavelet_scale_analysis(kont,outname, n = 100):
             plt.savefig(path+"\\"+outname +'wavelet_pethat_fast_'+str(i+1)+'.png', dpi=200)
             plt.clf()
             bar()
-    return sums ,energies, en_scales, wavelet_coeffs
+
+    if dosum == True:
+        plt.imshow(sums, origin='lower', interpolation='nearest')
+        plt.colorbar()
+        plt.title('Sum of the PetHat Wavelet Coefficients', fontsize=16)
+        plt.savefig(path+"\\"+outname +'wavelet_pethat_fast_total.png', dpi=200)
+        #plt.show()
+        plt.clf()
+
+    plt.plot(en_scales,energies)
+    plt.xlabel(r'Scale', fontsize=14)
+    plt.ylabel(r'Wavelet Energy', fontsize=14)
+    plt.title('PetHat Wavelet Energies', fontsize=16)
+    plt.savefig(path+'\\'+outname+'6cm_pethat_energy_smooth.png', dpi=200)
+    #plt.show()
+    plt.clf()
+
+    hdu_new = fits.PrimaryHDU(np.real(wavelet_coeffs))
+    hdu_new.writeto(path+'\\'+outname+'wavelet_coeffs.fits',overwrite=True)
+
+    return energies, en_scales, wavelet_coeffs
 
 
-path = str(pathlib.Path(__file__).parent.resolve())
-#------------------------------
-#-- observational data
-#------------------------------
-
-outname = 'Output/DDO168_V/DDO168_V_'
-adata = fits.open(path+'\\data\\'+'starless_backgroundless_d168.fit')
-
-#outname = 'Output/M51_V/M51_V_'
-#adata = fits.open(path+'\\data\\'+'m51.fits')
-
-#outname = 'Output/DD069_V/DD069_V_'
-#adata = fits.open(path+'\\data\\'+'starless_backgroundless_d69_V.fit')
-
-a = adata[0].data
-
-#------------------------------
-#-- cropping and zero padding
-#------------------------------
-
-#a=a[300:700,200:600]
-
-kont = np.array(a.astype(float))
-kont = kont/np.max(kont)
-
-plt.imshow(kont)
-plt.colorbar()
-plt.show()
-
-ny = kont[0,:].size
-nx = kont[:,0].size
-
-print(kont.shape,np.max(kont),np.min(kont))
-kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='constant')
-print(kont.shape,np.max(kont),np.min(kont))
-
-#--------------------------------------------------------------------------------------------------------------------------------------------------
-"""
-outname_B = 'Output/DD069_B/DD069_B_'
-adata_B = fits.open(path+'\\data\\'+'starless_backgroundless_d69_B.fit')
-
-b = adata_B[0].data
+#-----------------------------------------------------------------
+#-------------------- Wavelet Scale Correlation ------------------
+#-----------------------------------------------------------------
 
 
-b=b[300:700,200:600]
+def pethat_wavelet_scale_correlation(kont_a,outname_a,kont_b,outname_b, n = 100):    
+    
+    path = str(pathlib.Path(__file__).parent.resolve())
+    energies_a, en_scales_a, outputs_a = pethat_wavelet_scale_analysis(kont_a,outname_a, 100)
+    energies_b, en_scales_b, outputs_b = pethat_wavelet_scale_analysis(kont_b,outname_b, 100)
 
-kont_b = np.array(b.astype(float))
-kont_b = kont_b/np.max(kont_b)
+    print("The normal correlation between the maps is: ", (np.sum( kont_a * np.conjugate(kont_b) )/np.sqrt( np.sum(np.abs(kont_a)**2) * np.sum(np.abs(kont_b)**2) )))
+    
+    corr = np.zeros(n) #Calculating the cross-correlation
+    for i in range(n):
+        corr[i] = np.real(np.sum(outputs_a[i]*np.conjugate(outputs_b[i]))/np.sqrt(energies_a[i]*energies_b[i]))
 
-
-plt.imshow(kont_b)
-plt.colorbar()
-plt.show()
-
-nyb = kont_b[0,:].size
-nxb = kont_b[:,0].size
-
-print(kont_b.shape,np.max(kont_b),np.min(kont_b))
-kont_b = np.pad(kont_b,[(0,int(np.max([-nxb+nyb,0]))), (0,int(np.max([nxb-nyb,0])))], mode='constant')
-print(kont_b.shape,np.max(kont_b),np.min(kont_b))
-"""
-#nx = 1000
-#ny = 1000
-#coeff = 2*np.pi/(2*nx-1)
-#sca = 50 * coeff
-
-#pet_r = scipy.fft.fftshift(scipy.fft.fft2(scipy.fft.ifftshift(pethat_phi_func(np.zeros((2*nx-1,2*ny-1)),sca))))
-#pet_r_rad = np.real(pet_r)
-#pet_r_rad = pet_r_rad[int(np.max([nx,ny]))]
-
-#plt.imshow(np.abs(np.real(pet_r)))
-#plt.colorbar()
-#plt.show()
-
-#plt.plot(np.arange(-int(np.max([nx,ny])),int(np.max([nx,ny]))-1),pet_r_rad)
-#plt.show()
-
-sums ,energies, en_scales, outputs = pethat_wavelet_scale_analysis(kont,outname, 100)
-
-"""sums_b ,energies_b, en_scales_b, outputs_b = pethat_wavelet_scale_analysis(kont_b,outname_B, 100)
-
-n=en_scales_b.size
-print(np.sum(kont*np.conjugate(kont_b))/np.sqrt(np.sum(np.abs(kont)**2)*np.sum(np.abs(np.conjugate(kont_b))**2)))
-corr = np.zeros(n)
-for i in range(n):
-    corr[i] = np.real(np.sum(outputs[i]*np.conjugate(outputs_b[i]))/np.sqrt(energies[i]*energies_b[i]))
+    plt.plot(en_scales_a,corr)
+    plt.xlabel(r'Scale', fontsize=14)
+    plt.ylabel(r'Correlation of B and V', fontsize=14)
+    plt.title('Correlation to scale', fontsize=16)
+    plt.savefig(path+'\\'+'Output/'+'6cm_pethat_corr_smooth.png', dpi=200)
+    plt.show()
+    
+    return
 
 
-plt.plot(en_scales,corr)
-plt.xlabel(r'Scale', fontsize=14)
-plt.ylabel(r'Correlation of B and V', fontsize=14)
-plt.title('Correlation to scale', fontsize=16)
-plt.savefig(path+'\\'+'Output/'+'6cm_pethat_corr_smooth.png', dpi=200)
-plt.show()
-"""
-
-plt.imshow(sums, origin='lower', interpolation='nearest')
-plt.colorbar()
-plt.title('Sum of the PetHat Wavelet Coefficients', fontsize=16)
-plt.savefig(path+"\\"+outname +'wavelet_pethat_fast_total.png', dpi=200)
-#plt.show()
-plt.clf()
 
 
-plt.plot(en_scales,energies)
-plt.xlabel(r'Scale', fontsize=14)
-plt.ylabel(r'Wavelet Energy', fontsize=14)
-plt.title('PetHat Wavelet Energies', fontsize=16)
-plt.savefig(path+'\\'+outname+'6cm_pethat_energy_smooth.png', dpi=200)
-#plt.show()
-plt.clf()
-
-"""
-plt.imshow(sums_b, origin='lower', interpolation='nearest')
-plt.colorbar()
-plt.title('Sum of the PetHat Wavelet Coefficients', fontsize=16)
-plt.savefig(path+"\\"+outname_B +'wavelet_pethat_fast_total.png', dpi=200)
-#plt.show()
-plt.clf()
-
-plt.plot(en_scales_b,energies_b)
-plt.xlabel(r'Scale', fontsize=14)
-plt.ylabel(r'Wavelet Energy', fontsize=14)
-plt.title('PetHat Wavelet Energies', fontsize=16)
-plt.savefig(path+'\\'+outname_B+'6cm_pethat_energy_smooth.png', dpi=200)
-#plt.show()
-"""
-hdu_new = fits.PrimaryHDU(np.real(outputs))
-hdu_new.writeto(path+'\\'+outname+'wavelet_coeffs.fits',overwrite=True)
