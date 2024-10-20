@@ -42,7 +42,7 @@ def preprocess(name,filename,crop_cor = []):
     nx = kont[:,0].size
     kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='constant') 
 
-    return kont,outname,nx,ny # Returns the final map and the save path
+    return kont, outname, nx, ny # Returns the final map and the save path
 
 #-----------------------------------------------------------------
 #---------------------- The Pet-Hat function ---------------------
@@ -68,7 +68,7 @@ def pethat_phi_func(data,a_scale):
 #--------------------- Wavelet Scale Analysis --------------------
 #-----------------------------------------------------------------
 
-def pethat_wavelet_scale_analysis(kont,outname,nx,ny, n = 100 , dosum = False):
+def pethat_wavelet_scale_analysis(kont, outname, nx, ny, n = 100, dosum = False):
 
     path = str(pathlib.Path(__file__).parent.resolve())
 
@@ -127,11 +127,11 @@ def pethat_wavelet_scale_analysis(kont,outname,nx,ny, n = 100 , dosum = False):
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_correlation(kont_a,outname_a,kont_b,outname_b, n = 100):    
+def pethat_wavelet_scale_correlation(kont_a, outname_a, kont_b, outname_b, nx, ny, n = 100):    
     
     path = str(pathlib.Path(__file__).parent.resolve())
-    energies_a, en_scales_a, outputs_a = pethat_wavelet_scale_analysis(kont_a,outname_a, 100)
-    energies_b, en_scales_b, outputs_b = pethat_wavelet_scale_analysis(kont_b,outname_b, 100)
+    energies_a, en_scales_a, outputs_a = pethat_wavelet_scale_analysis(kont_a, outname_a, nx, ny, n)
+    energies_b, en_scales_b, outputs_b = pethat_wavelet_scale_analysis(kont_b, outname_b, nx, ny, n)
 
     print("The normal correlation between the maps is: ", (np.sum( kont_a * np.conjugate(kont_b) )/np.sqrt( np.sum(np.abs(kont_a)**2) * np.sum(np.abs(kont_b)**2) )))
     
