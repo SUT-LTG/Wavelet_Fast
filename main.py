@@ -11,14 +11,16 @@ from astropy.io import fits
 
 #kont, outname, nx, ny = preprocess('DDO168_V', 'starless_backgroundless_d168.fit')
 
-kont, outname, nx, ny = preprocess('M51_V' ,'m51.fits')
+#kont, outname, nx, ny = preprocess('M51_V' ,'m51.fits')
 
-#kont, outname, nx, ny = preprocess('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]])
+kont_a, outname_a, nx, ny = preprocess('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]])
 
-#kont, outname, nx, ny = preprocess('DD069_B', 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]])
+kont_b, outname_b, nx, ny = preprocess('DD069_B', 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]])
 
 
-energies, en_scales, outputs = pethat_wavelet_scale_analysis(kont, outname, nx, ny, 100)
+#energies, en_scales, outputs = pethat_wavelet_scale_analysis(kont, outname, nx, ny, 100)
+
+pethat_wavelet_scale_correlation(kont_a, outname_a, kont_b, outname_b, nx, ny, 100)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 

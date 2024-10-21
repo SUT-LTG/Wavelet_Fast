@@ -138,8 +138,9 @@ def pethat_wavelet_scale_correlation(kont_a, outname_a, kont_b, outname_b, nx, n
     corr = np.zeros(n) #Calculating the cross-correlation
     for i in range(n):
         corr[i] = np.real(np.sum(outputs_a[i]*np.conjugate(outputs_b[i]))/np.sqrt(energies_a[i]*energies_b[i]))
+    corr_err = np.sqrt(1 - corr**2)/ np.sqrt(nx*ny/en_scales_a**2 - 2)
 
-    plt.plot(en_scales_a,corr)
+    plt.errorbar(en_scales_a,corr,yerr = corr_err,fmt = '.')
     plt.xlabel(r'Scale', fontsize=14)
     plt.ylabel(r'Correlation of B and V', fontsize=14)
     plt.title('Correlation to scale', fontsize=16)
