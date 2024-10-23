@@ -36,6 +36,7 @@ def preprocess(name,filename,crop_cor = []):
 
     plt.imshow(kont)
     plt.colorbar()
+    plt.savefig(path+"\\"+outname +'original.png', dpi=200)
     plt.show()
 
     ny = kont[0,:].size
@@ -116,8 +117,6 @@ def pethat_wavelet_scale_analysis(kont, outname, nx, ny, n = 100, dosum = False)
     #plt.show()
     plt.clf()
 
-    hdu_new = fits.PrimaryHDU(np.real(wavelet_coeffs))
-    hdu_new.writeto(path+'\\'+outname+'wavelet_coeffs.fits',overwrite=True)
 
     return energies, en_scales, wavelet_coeffs
 
@@ -144,11 +143,40 @@ def pethat_wavelet_scale_correlation(kont_a, outname_a, kont_b, outname_b, nx, n
     plt.xlabel(r'Scale', fontsize=14)
     plt.ylabel(r'Correlation of B and V', fontsize=14)
     plt.title('Correlation to scale', fontsize=16)
-    plt.savefig(path+'\\'+'Output/'+'6cm_pethat_corr_smooth.png', dpi=200)
+    plt.savefig(path+'\\'+'Output/'+'6cm_pethat_corr_smooth.png', dpi=400)
     plt.show()
     
     return
+      
 
+class data_cube:
+    def __init__(self, cube, scales , name):
+        self.cube = cube
+        self.scales = scales
+        self.name = name
+        self.outname = 'Output/'+name+'/'+name+'_'  
 
+    def create_gif(self):
+        def update(frame,cube,scales,name):
+            img.set_array(cube[frame])
+            tx.set_text('PetHat wavelet animation of ' + name + ' Scale = '+ str(np.round(scales[frame],5)))
+        
+        path = str(pathlib.Path(__file__).parent.resolve())
+        
+        fig = plt.figure(dpi=300)
+        ax = fig.add_subplot(1,1,1)
+        img = ax.imshow(self.cube[0], origin='lower', interpolation='nearest',vmin=np.min(self.cube), vmax=np.max(self.cube), animated=True)
+        cb = fig.colorbar(img)
+        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ' Scale = '+ str(np.round(self.scales[0],5)), fontsize=16)
 
-
+        ani = animation.FuncAnimation(fig=fig, func=update, fargs=(self.cube,self.scales,self.name), frames=len(self.cube)-1, interval=100)
+        ani.save(filename=path+"\\"+self.outname +'animation.gif', writer="ffmpeg",codec="libx264")
+        
+        return
+    
+    def save_FITS(self):
+        path = str(pathlib.Path(__file__).parent.resolve())
+        hdu_new = fits.PrimaryHDU(np.real(self.cube))
+        hdu_new.writeto(path+'\\'+self.outname+'wavelet_coeffs.fits',overwrite=True)
+        return
+        
