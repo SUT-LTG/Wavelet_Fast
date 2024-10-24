@@ -12,29 +12,52 @@ path = str(pathlib.Path(__file__).parent.resolve())
 
 #kont, outname, nx, ny = preprocess('DDO168_V', 'starless_backgroundless_d168.fit')
 
-#kont, outname, nx, ny = preprocess('M51_V' ,'m51.fits')
 
-#kont_a, outname_a, nx, ny = preprocess('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]])
+#name='M51_V'
+#kont, nx, ny = preprocess(name ,'m51.fits')
+#out,scal = pethat_wavelet_scale_analysis(kont, nx, ny, 100)
+#cube = wavelet_results(out,scal,name)
+#cube.calc_energies()
+#cube.create_gif()
 
-#kont_b, outname_b, nx, ny = preprocess('DD069_B', 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]])
 
-(nx,ny) = (300,300)
-name = 'Random'
-outname = 'Output/'+name+'/'+name+'_'
-kont = np.random.rand(nx,ny)
 
-plt.imshow(kont)
-plt.colorbar()
-plt.savefig(path+"\\"+outname +'original.png', dpi=200)
-#plt.show()
+#name_a = 'DD069_V'
+#kont_a, nxa, nya = preprocess(name_a, 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]])
+#out,scal = pethat_wavelet_scale_analysis(kont_a, nxa, nya, 100)
+#cube_a = wavelet_results(out,scal,name_a)
+#cube_a.calc_energies()
+#cube_a.create_gif()
+#
+#name_b = 'DD069_B'
+#kont_b, nxb, nyb = preprocess(name_b, 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]])
+#out,scal = pethat_wavelet_scale_analysis(kont_b, nxb, nyb, 100)
+#cube_b = wavelet_results(out,scal,name_b)
+#cube_b.calc_energies()
+#cube_b.create_gif()
+#
+#plot_correlation(cube_a,cube_b)
 
-energies, en_scales, outputs = pethat_wavelet_scale_analysis(kont, outname, nx, ny, 100)
 
-cube = data_cube(np.real(outputs),en_scales,name)
-cube.create_gif()
-cube.save_FITS()
 
-#pethat_wavelet_scale_correlation(kont_a, outname_a, kont_b, outname_b, nx, ny, 100)
+
+#(nx,ny) = (300,300)
+#name = 'Random'
+#outname = 'Output/'+name+'/'+name+'_'
+#kont = np.random.rand(nx,ny)
+
+#plt.imshow(kont)
+#plt.colorbar()
+#plt.savefig(path+"\\"+outname +'original.png', dpi=200)
+##plt.show()
+
+
+
+
+
+
+
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 
