@@ -30,6 +30,7 @@ def preprocess(name,filename,crop_cor = []):
 
     kont = np.array(a.astype(float))
     kont = kont/np.max(kont)  # Normalize to 1
+    og = kont
 
     # Plot and save the image of the object
     plt.imshow(kont, origin='lower', interpolation='nearest')
@@ -43,7 +44,7 @@ def preprocess(name,filename,crop_cor = []):
     nx = kont[:,0].size
     kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='constant') 
 
-    return kont, nx, ny # Returns the final map and the shape of the original image
+    return kont, nx, ny, og # Returns the final map and the shape of the original image
 
 #-----------------------------------------------------------------
 #---------------------- The Pet-Hat function ---------------------
@@ -70,7 +71,9 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(kont, nx, ny, start=2, steps=1, n = 100):
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[], start=2, step_length=1, n = 100):
+
+    kont, nx, ny, og = preprocess(name,filename,crop_cor)
 
     # Produces a complete FFT of the image
     fft_shape = 2*np.array(kont.shape) - 1
@@ -81,7 +84,7 @@ def pethat_wavelet_scale_analysis(kont, nx, ny, start=2, steps=1, n = 100):
     coeff = 2*np.pi/fnx 
 
     # Defines the array for scales and wavelet coefficients
-    en_scales = start + np.arange(0,n) * steps
+    en_scales = start + np.arange(0,n) * step_length
     wavelet_coeffs = np.clongdouble(np.zeros((n,nx,ny)))
 
     # Calculates the wavelet coefficients for all the scales
@@ -93,7 +96,7 @@ def pethat_wavelet_scale_analysis(kont, nx, ny, start=2, steps=1, n = 100):
             wavelet_coeffs[i] = map1
             bar()
 
-    return wavelet_coeffs,en_scales
+    return wavelet_results(wavelet_coeffs,en_scales,name,og)
 
 #-----------------------------------------------------------------
 #------------------ Wavelet Results as an Object -----------------
@@ -111,11 +114,12 @@ class wavelet_results:
     calculating the energies and plot the energy over scale plot, 
     and calculating the sum of the wavelet coeffs. 
     """
-    def __init__(self, cube, scales , name):
+    def __init__(self, cube, scales , name , og):
         self.cube = cube
         self.scales = scales
         self.name = name
-        self.outname = 'Output/'+name+'/'+name+'_'  
+        self.outname = 'Output/'+name+'/'+name+'_'
+        self.original = og  
 
     def create_gif(self):
         def update(frame,cube,scales,name):
@@ -130,7 +134,7 @@ class wavelet_results:
         tx = ax.set_title('PetHat wavelet animation of ' + self.name + ' Scale = '+ str(np.round(self.scales[0],5)), fontsize=16)
 
         ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,self.name), frames=len(self.cube)-1, interval=100)
-        ani.save(filename=path+"\\"+self.outname +'animation.gif', writer="ffmpeg",codec="libx264")
+        ani.save(filename=path+"\\"+self.outname +'animation.gif', writer='ffmpeg',codec="libx264")
         
         return
     
@@ -195,6 +199,8 @@ def plot_correlation(cube_a, cube_b): # This function gets two result objects an
     if (not np.allclose(cube_a.scales,cube_b.scales)) or np.shape(cube_a.cube) != np.shape(cube_b.cube):
         print('Error: Cubes are not compatible.')
         return
+    obj_name,filt_a,filt_b = give_names(cube_a.name,cube_b.name)
+    print("The normal correlation between the maps is: ", (np.sum( cube_a.original * np.conjugate(cube_b.original) )/np.sqrt( np.sum(np.abs(cube_a.original)**2) * np.sum(np.abs(cube_b.original)**2) )))
     (n,nx,ny) = np.shape(cube_a.cube)
     
     # Calculating the cross-correlation and its error
@@ -203,7 +209,6 @@ def plot_correlation(cube_a, cube_b): # This function gets two result objects an
         corr[i] = np.real(np.sum(cube_a.cube[i]*np.conjugate(cube_b.cube[i]))/np.sqrt(energies_a[i]*energies_b[i]))
     corr_err = np.sqrt(1 - corr**2)/ np.sqrt(nx*ny/cube_a.scales**2 - 2)
     
-    obj_name,filt_a,filt_b = give_names(cube_a.name,cube_b.name)
     plt.clf()
     plt.errorbar(cube_a.scales,corr,yerr = corr_err,fmt = '.')
     plt.xlabel(r'Scale (pixels)', fontsize=14)
@@ -211,4 +216,5 @@ def plot_correlation(cube_a, cube_b): # This function gets two result objects an
     plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=16)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
     plt.show()
+    plt.clf()
     return

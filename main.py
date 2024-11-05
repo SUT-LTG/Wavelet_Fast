@@ -13,30 +13,27 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #kont, outname, nx, ny = preprocess('DDO168_V', 'starless_backgroundless_d168.fit')
 
 
-#name='M51_V'
-#kont, nx, ny = preprocess(name ,'m51.fits')
-#out,scal = pethat_wavelet_scale_analysis(kont, nx, ny, 100)
-#cube = wavelet_results(out,scal,name)
+#cube = pethat_wavelet_scale_analysis('M51_V' ,'m51.fits', start = 2, step_length = 1, n = 100)
+#cube.save_layers()
+#cube.save_FITS()
 #cube.calc_energies()
 #cube.create_gif()
 
 
 
-#name_a = 'DD069_V'
-#kont_a, nxa, nya = preprocess(name_a, 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]])
-#out,scal = pethat_wavelet_scale_analysis(kont_a, nxa, nya, 100)
-#cube_a = wavelet_results(out,scal,name_a)
-#cube_a.calc_energies()
-#cube_a.create_gif()
-#
-#name_b = 'DD069_B'
-#kont_b, nxb, nyb = preprocess(name_b, 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]])
-#out,scal = pethat_wavelet_scale_analysis(kont_b, nxb, nyb, 100)
-#cube_b = wavelet_results(out,scal,name_b)
-#cube_b.calc_energies()
-#cube_b.create_gif()
-#
-#plot_correlation(cube_a,cube_b)
+cube_a = pethat_wavelet_scale_analysis('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]], 2, 1, 100)
+cube_a.save_layers()
+cube_a.save_FITS()
+cube_a.calc_energies()
+cube_a.create_gif()
+
+cube_b = pethat_wavelet_scale_analysis('DD069_B', 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]], 2, 1, 100)
+cube_b.save_layers()
+cube_b.save_FITS()
+cube_b.calc_energies()
+cube_b.create_gif()
+
+plot_correlation(cube_a,cube_b)
 
 
 
