@@ -11,6 +11,7 @@ import pylab as plt
 from scipy import io
 from astropy.io import fits
 from scipy import stats
+from typing import Literal
 
 #-----------------------------------------------------------------
 #---------------------- Pre-Processing ---------------------------
@@ -71,8 +72,14 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(name,filename,crop_cor=[], start=2, step_length=1, n = 100):
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,1,100], scales_type = "triplet", pixel_scale = 1, distance = 1):  # placeholder for pixel scale and distance
+    scales_types = ["triplet", "array"]
+    if scales_type not in scales_types:
+        raise ValueError("Invalid scale type. Expected one of: %s" % scales_types)
+    begin_str = "Commencing the wavelet scale analysis of "+name
+    end_str = "Wavelet scale analysis of "+name+" has finished."
 
+    print(begin_str)
     kont, nx, ny, og = preprocess(name,filename,crop_cor)
 
     # Produces a complete FFT of the image
@@ -84,7 +91,12 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[], start=2, step_lengt
     coeff = 2*np.pi/fnx 
 
     # Defines the array for scales and wavelet coefficients
-    en_scales = start + np.arange(0,n) * step_length
+    if scales_type == "triplet":
+        [start,n,step_length] = scales_in
+        en_scales = start + np.arange(0,n) * step_length
+    if scales_type == "array":
+        en_scales = scales_in
+        n = len(en_scales)
     wavelet_coeffs = np.clongdouble(np.zeros((n,nx,ny)))
 
     # Calculates the wavelet coefficients for all the scales
@@ -95,8 +107,8 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[], start=2, step_lengt
             map1 = map1[0:nx,0:ny]
             wavelet_coeffs[i] = map1
             bar()
-
-    return wavelet_results(wavelet_coeffs,en_scales,name,og)
+    print(end_str)
+    return wavelet_results(wavelet_coeffs,en_scales,name,og,pixel_scale,distance)
 
 #-----------------------------------------------------------------
 #------------------ Wavelet Results as an Object -----------------
@@ -105,8 +117,10 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[], start=2, step_lengt
       
 class wavelet_results:
     """ 
-    This object consists of the name of the observed object, the cube of wavelet coefficients, and all the corresponding scales. 
-    The object can then produce all the needed data, utilizing several functions. 
+    This object consists of the name of the observed object, the cube of wavelet coefficients, all the corresponding scales, 
+    the original image, the pixel scale in arcsec/pixel, and the distance to the object in parsecs. The object can then
+    produce all the needed data, utilizing several methods. 
+
     The possible (at least for now) actions consist of:
     creating a gif from the data cube of wavelet coeffs, 
     saving the data cube in a FITS file, 
@@ -114,52 +128,75 @@ class wavelet_results:
     calculating the energies and plot the energy over scale plot, 
     and calculating the sum of the wavelet coeffs. 
     """
-    def __init__(self, cube, scales , name , og):
+
+    def __init__(self, cube, scales , name , og, pixel_scale, dist):
         self.cube = cube
         self.scales = scales
         self.name = name
         self.outname = 'Output/'+name+'/'+name+'_'
         self.original = og  
-
-    def create_gif(self):
+        self.pixel_scale = pixel_scale
+        self.dist = dist
+    
+    def unit_conv(self, to_unit = 'pixels'):
+        if to_unit == 'pixels':
+            return 1
+        if to_unit == 'arcsec':
+            return self.pixel_scale
+        if to_unit == 'arcmin':
+            return self.pixel_scale/60
+        if to_unit == 'pc':
+            return self.dist*self.pixel_scale/206265
+        if to_unit == 'kpc':
+            return self.dist*self.pixel_scale/206265/1000
+        else:
+            raise ValueError("Invalid unit. Expected one of: %s" % ['pixels','arcsec','arcmin','pc','kpc'])
+        
+    def create_gif(self,unit='pixels'):
         def update(frame,cube,scales,name):
             img.set_array(cube[frame])
-            tx.set_text('PetHat wavelet animation of ' + name + ' Scale = '+ str(np.round(scales[frame],5)))
+            tx.set_text('PetHat wavelet animation of ' + name + ', scale = '+str(np.round(scales[frame]*self.unit_conv(unit),3))+' '+ unit)
         
+        print("Creating GIF from the coefficients of "+self.name+" ... ",end="")
+
         our_data = np.real(self.cube)
         fig = plt.figure(dpi=300)
         ax = fig.add_subplot(1,1,1)
         img = ax.imshow(our_data[0], origin='lower', interpolation='nearest',vmin=np.min(our_data), vmax=np.max(our_data), animated=True)
         cb = fig.colorbar(img)
-        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ' Scale = '+ str(np.round(self.scales[0],5)), fontsize=16)
+        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ', scale = '+str(np.round(self.scales[0]*self.unit_conv(unit),3))+' '+ unit, fontsize=14)
 
         ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,self.name), frames=len(self.cube)-1, interval=100)
         ani.save(filename=path+"\\"+self.outname +'animation.gif', writer='ffmpeg',codec="libx264")
-        
+        print("DONE")
         return
     
     def save_FITS(self):
+        print("Saving the data of "+self.name+" as a FITS file ... ",end="")
         hdu_new = fits.PrimaryHDU(np.real(self.cube))
         hdu_new.writeto(path+'\\'+self.outname+'wavelet_coeffs.fits',overwrite=True)
+        print("DONE")
         return
         
-    def save_layers(self):
+    def save_layers(self,unit='pixels'):
+        print("Saving the layers of "+self.name+" as PNG ... ",end="")
         for i in range(len(self.cube)):
             plt.imshow(np.real(self.cube[i]), origin='lower', interpolation='nearest')
             plt.colorbar()
-            plt.title('PetHat wavelet coefficient of '+self.name+', scale='+str(np.round(self.scales[i],5))+' pixels', fontsize=16)
+            plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=14)
             plt.savefig(path+"\\"+self.outname +'wavelet_pethat_fast_'+str(i+1)+'.png', dpi=300)
             plt.clf()
+        print("DONE")
         return
 
-    def calc_energies(self, do_plot=True):
+    def calc_energies(self, do_plot=True, unit = 'pixels'):
         energies = np.zeros(len(self.cube))
         for i in range(len(self.cube)):
             energies[i] = np.sum(np.abs(self.cube[i])**2)
         if do_plot:
             plt.clf()
-            plt.plot(self.scales,energies)
-            plt.xlabel(r'Scale (pixels)', fontsize=14)
+            plt.plot(self.scales*self.unit_conv(unit),energies)
+            plt.xlabel(r'Scale ('+unit+')', fontsize=14)
             plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=14)
             plt.title('PetHat Wavelet Energies', fontsize=16)
             plt.savefig(path+'\\'+self.outname+'pethat_energy_smooth.png', dpi=300)
@@ -180,7 +217,7 @@ class wavelet_results:
 
 
 #-----------------------------------------------------------------
-#-------------------- Wavelet Scale Cross-Correlation ------------------
+#----------------- Wavelet Scale Cross-Correlation ---------------
 #-----------------------------------------------------------------
 
 def give_names(str_a,str_b): # This function extracts the name of the object and the filters for the cross-correlation function
@@ -193,7 +230,7 @@ def give_names(str_a,str_b): # This function extracts the name of the object and
         name+=(str_a[i])  
     return name , str_a, str_b
 
-def plot_correlation(cube_a, cube_b): # This function gets two result objects and if they are compatible, plots their scale cross-correlation over scale
+def plot_correlation(cube_a, cube_b, unit='pixels'): # This function gets two result objects and if they are compatible, plots their scale cross-correlation over scale
     energies_a = cube_a.calc_energies(do_plot=False)
     energies_b = cube_b.calc_energies(do_plot=False)
     if (not np.allclose(cube_a.scales,cube_b.scales)) or np.shape(cube_a.cube) != np.shape(cube_b.cube):
@@ -210,8 +247,8 @@ def plot_correlation(cube_a, cube_b): # This function gets two result objects an
     corr_err = np.sqrt(1 - corr**2)/ np.sqrt(nx*ny/cube_a.scales**2 - 2)
     
     plt.clf()
-    plt.errorbar(cube_a.scales,corr,yerr = corr_err,fmt = '.')
-    plt.xlabel(r'Scale (pixels)', fontsize=14)
+    plt.errorbar(cube_a.scales*cube_a.unit_conv(unit),corr,yerr = corr_err,fmt = '.')
+    plt.xlabel(r'Scale ('+unit+')', fontsize=14)
     plt.ylabel(r'Correlation', fontsize=14)
     plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=16)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
