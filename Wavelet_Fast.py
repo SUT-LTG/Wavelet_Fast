@@ -19,6 +19,11 @@ from typing import Literal
 
 path = str(pathlib.Path(__file__).parent.resolve())
 
+def save_array_as_FITS(array,filename):
+    hdu_new = fits.PrimaryHDU(array)
+    hdu_new.writeto(path+'\\data\\'+filename+'.fits',overwrite=True)
+    return
+
 def preprocess(name,filename,crop_cor = []):
     # Retrieves observational data
     outname = 'Output/'+name+'/'+name+'_'
@@ -35,6 +40,7 @@ def preprocess(name,filename,crop_cor = []):
 
     # Plot and save the image of the object
     plt.imshow(kont, origin='lower', interpolation='nearest')
+    plt.title("Normalized "+name)
     plt.colorbar()
     plt.savefig(path+"\\"+outname +'original.png', dpi=200)
     #plt.show()

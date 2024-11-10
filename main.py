@@ -19,13 +19,20 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #cube.calc_energies(unit='pixels')
 #cube.create_gif(unit='pixels')
 
+#save_array_as_FITS(np.random.random((200,200)),'random1')
+#cube = pethat_wavelet_scale_analysis('Random_1' ,'random1.fits', scales_in = [2, 50, 1], scales_type="triplet", pixel_scale=4, distance=100000)
+#cube.save_layers(unit='pixels')
+#cube.save_FITS()
+#cube.calc_energies(unit='pixels')
+#cube.create_gif(unit='pixels')
 
 
-cube_a = pethat_wavelet_scale_analysis('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]], scales_in = [2, 100, 1], scales_type="triplet", pixel_scale=1.134, distance=800000)
-cube_a.save_layers()
-cube_a.save_FITS()
-cube_a.calc_energies(unit='pc')
-cube_a.create_gif(unit='pc')
+
+#cube_a = pethat_wavelet_scale_analysis('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]], scales_in = [2, 100, 1], scales_type="triplet", pixel_scale=1.134, distance=800000)
+#cube_a.save_layers()
+#cube_a.save_FITS()
+#cube_a.calc_energies(unit='pc')
+#cube_a.create_gif(unit='pc')
 
 #cube_b = pethat_wavelet_scale_analysis('DD069_B', 'starless_backgroundless_d69_B.fit', [[300,700],[200,600]],  scales_in = [2, 100, 1],scales_type="triplet")
 #cube_b.save_layers()
