@@ -49,7 +49,7 @@ def preprocess(name,filename,crop_cor = []):
     # Zero-padding the image to a square to reduce the complications with Pet Hat later on
     ny = kont[0,:].size
     nx = kont[:,0].size
-    kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='constant') 
+    kont = np.pad(kont,[(0,int(np.max([-nx+ny,0]))), (0,int(np.max([nx-ny,0])))], mode='median') 
 
     return kont, nx, ny, og # Returns the final map and the shape of the original image
 
@@ -78,7 +78,7 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,1,100], scales_type = "triplet", pixel_scale = 1, distance = 1):  # placeholder for pixel scale and distance
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False):  # placeholder for pixel scale and distance
     scales_types = ["triplet", "array"]
     if scales_type not in scales_types:
         raise ValueError("Invalid scale type. Expected one of: %s" % scales_types)
@@ -88,13 +88,18 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,1,100],
     print(begin_str)
     kont, nx, ny, og = preprocess(name,filename,crop_cor)
 
-    # Produces a complete FFT of the image
-    fft_shape = 2*np.array(kont.shape) - 1
-    fft_kont = scipy.fft.fftshift(scipy.fft.fft2(kont,fft_shape))
+    if full:
+        # Produces a complete FFT of the image
+        fft_shape = 2*np.array(kont.shape) - 1
+        fft_kont = scipy.fft.fftshift(scipy.fft.fft2(kont,fft_shape))
 
+    if full == False:
+        # Produces a complete FFT of the image
+        fft_kont = scipy.fft.fftshift(scipy.fft.fft2(kont))
+    
     # Calculates the coefficient needed to convert the unit of the sacle to pixels
     fnx = fft_kont[:,0].size
-    coeff = 2*np.pi/fnx 
+    coeff = 4*np.pi/fnx 
 
     # Defines the array for scales and wavelet coefficients
     if scales_type == "triplet":
