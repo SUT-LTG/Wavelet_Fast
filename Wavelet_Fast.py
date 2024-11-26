@@ -2,6 +2,7 @@ import numpy as np
 import scipy, time
 import matplotlib
 import pathlib
+import os
 
 from alive_progress import alive_bar
 import matplotlib.animation as animation
@@ -38,7 +39,13 @@ def preprocess(name,filename,crop_cor = []):
     kont = kont/np.max(kont)  # Normalize to 1
     og = kont
 
+    # Creates a new folder if necessary
+    newpath = path+'\\'+ 'Output/'+ name
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+    
     # Plot and save the image of the object
+    plt.clf()
     plt.imshow(kont, origin='lower', interpolation='nearest')
     plt.title("Normalized "+name)
     plt.colorbar()
@@ -175,7 +182,7 @@ class wavelet_results:
         ax = fig.add_subplot(1,1,1)
         img = ax.imshow(our_data[0], origin='lower', interpolation='nearest',vmin=np.min(our_data), vmax=np.max(our_data), animated=True)
         cb = fig.colorbar(img)
-        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ', scale = '+str(np.round(self.scales[0]*self.unit_conv(unit),3))+' '+ unit, fontsize=14)
+        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ', scale = '+str(np.round(self.scales[0]*self.unit_conv(unit),3))+' '+ unit, fontsize=12)
 
         ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,self.name), frames=len(self.cube)-1, interval=100)
         ani.save(filename=path+"\\"+self.outname +'animation.gif', writer='ffmpeg',codec="libx264")
@@ -184,8 +191,19 @@ class wavelet_results:
     
     def save_FITS(self):
         print("Saving the data of "+self.name+" as a FITS file ... ",end="")
-        hdu_new = fits.PrimaryHDU(np.real(self.cube))
-        hdu_new.writeto(path+'\\'+self.outname+'wavelet_coeffs.fits',overwrite=True)
+        hdu_new = fits.PrimaryHDU()
+        hdu_ima = fits.ImageHDU(np.real(self.cube))
+        hdu_ens = fits.ImageHDU(self.calc_energies(do_plot=False))
+
+        # Update header
+        hdu_ima.header.append(('AUTHOR','Aria Hemmatian'))
+        hdu_ima.header.append(('OBJECT',self.name))
+        hdu_ima.header.append(('SCA_UNIT','pixels', 'unit of the scales of the layers'))
+        hdu_ima.header.append(('DIST',self.dist,'distance of the object in parsecs'))
+        hdu_ima.header.append(('PIX_SCA',self.pixel_scale,'pixel scale in arcsecs'))
+
+        hdul = fits.HDUList([hdu_new,hdu_ima,hdu_ens])
+        hdul.writeto(path+'\\'+self.outname+'wavelet_coeffs.fits',overwrite=True)
         print("DONE")
         return
         
@@ -194,7 +212,7 @@ class wavelet_results:
         for i in range(len(self.cube)):
             plt.imshow(np.real(self.cube[i]), origin='lower', interpolation='nearest')
             plt.colorbar()
-            plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=14)
+            plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=12)
             plt.savefig(path+"\\"+self.outname +'wavelet_pethat_fast_'+str(i+1)+'.png', dpi=300)
             plt.clf()
         print("DONE")
@@ -207,9 +225,9 @@ class wavelet_results:
         if do_plot:
             plt.clf()
             plt.plot(self.scales*self.unit_conv(unit),energies)
-            plt.xlabel(r'Scale ('+unit+')', fontsize=14)
-            plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=14)
-            plt.title('PetHat Wavelet Energies', fontsize=16)
+            plt.xlabel(r'Scale ('+unit+')', fontsize=11)
+            plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=11)
+            plt.title('PetHat Wavelet Energies', fontsize=12)
             plt.savefig(path+'\\'+self.outname+'pethat_energy_smooth.png', dpi=300)
             #plt.show()
             plt.clf()
@@ -220,7 +238,7 @@ class wavelet_results:
         if do_plot:
             plt.imshow(sums, origin='lower', interpolation='nearest')
             plt.colorbar()
-            plt.title('Sum of the PetHat Wavelet Coefficients', fontsize=16)
+            plt.title('Sum of the PetHat Wavelet Coefficients', fontsize=12)
             plt.savefig(path+"\\"+self.outname +'wavelet_pethat_fast_total.png', dpi=200)
             #plt.show()
             plt.clf()
@@ -259,10 +277,10 @@ def plot_correlation(cube_a, cube_b, unit='pixels'): # This function gets two re
     
     plt.clf()
     plt.errorbar(cube_a.scales*cube_a.unit_conv(unit),corr,yerr = corr_err,fmt = '.')
-    plt.xlabel(r'Scale ('+unit+')', fontsize=14)
-    plt.ylabel(r'Correlation', fontsize=14)
-    plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=16)
+    plt.xlabel(r'Scale ('+unit+')', fontsize=12)
+    plt.ylabel(r'Correlation', fontsize=12)
+    plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=12)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
-    plt.show()
+    #plt.show()
     plt.clf()
     return
