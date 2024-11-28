@@ -50,31 +50,57 @@ path = str(pathlib.Path(__file__).parent.resolve())
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 # Testing some properties 
-"""
+
 num = 300
-lamb = 10
 diameter = 14
 num_circles = 10
-det_lim = 0.2
-arr = np.random.poisson(lamb,(num,num))
+arr = np.random.standard_normal((num,num))
+arr -= np.min(arr)
+arr = arr / np.max(arr)
 arr_rms = np.sqrt(np.var(arr))
-arr = arr.astype('float64')
+arr_noise = arr.astype('float64')
 #arr = np.zeros((num,num)) 
 x, y = np.meshgrid(np.arange(num), np.arange(num))
+save_array_as_FITS(arr_noise,'random_not')
 
-save_array_as_FITS(arr,'random_not')
-x0 = np.random.randint(diameter,num-diameter,size=num_circles)
-y0 = np.random.randint(diameter,num-diameter,size=num_circles)
-for i in range(num_circles):
-    r = np.sqrt((x - x0[i])**2 + (y - y0[i])**2)
-    circle = np.where(r <= diameter/ 2, det_lim*arr_rms, 0)
-    #circle = det_lim*arr_rms*np.exp(-2*(r/diameter)**2)
-    arr+=circle
+num_ensemble = 20
+delta = 0.1
+sig_size = 15
+energies = np.zeros((sig_size,50))
+datacube = np.zeros((sig_size,num_ensemble,num,num))
+for k in range(sig_size):
+    for j in range(num_ensemble):
+        datacube[k][j] = arr_noise
+        x0 = np.random.randint(diameter//2,num-diameter//2,size=num_circles)
+        y0 = np.random.randint(diameter//2,num-diameter//2,size=num_circles)
+        for i in range(num_circles):     
+            r = np.sqrt((x - x0[i])**2 + (y - y0[i])**2)
+            circle = np.where(r <= diameter/ 2, (k+1)*delta*arr_rms, 0)
+            datacube[k][j]+=circle
+        save_array_as_FITS(datacube[k][j],'random_circles_'+str(k)+'_'+str(j))
 
-save_array_as_FITS(arr,'random_circles')
+cube1 = pethat_wavelet_scale_analysis('Random_1' ,'random_not.fits', scales_in = [2, 50, 0.8], scales_type="triplet", pixel_scale=4, distance=100000)
+en_noise = cube1.calc_energies(do_plot=False)
+for i in range(sig_size):
+    for j in range(num_ensemble):
+        cube = pethat_wavelet_scale_analysis('Random_Circle_'+str(i)+'_'+str(j) ,'random_circles_'+str(i)+'_'+str(j)+'.fits', scales_in = [2, 50, 0.8], scales_type="triplet", pixel_scale=4, distance=100000)
+        energies[i] += cube.calc_energies(do_plot=False) - en_noise
+energies = energies/num_ensemble
 
-cube = pethat_wavelet_scale_analysis('Random_Circle' ,'random_circles.fits', scales_in = [2, 80, 0.5], scales_type="triplet", pixel_scale=4, distance=100000)
-cube1 = pethat_wavelet_scale_analysis('Random_1' ,'random_not.fits', scales_in = [2, 80, 0.5], scales_type="triplet", pixel_scale=4, distance=100000)
+def update(frame):
+    img.set_data(cube1.scales,energies[frame])
+    tx.set_text('Energy of the data with circles minus the energy of noise, scale = '+str(np.round((frame+1)*delta,1))+" sigma")
+
+fig , ax = plt.subplots(1,1,dpi=300)
+img, = ax.plot(cube1.scales,energies[0], animated=True)
+ax.set_xlabel(r'Scale (pixels)', fontsize=11)
+ax.set_ylabel(r'Wavelet Energy of random circles', fontsize=11)
+ax.set_ylim([np.min(energies),np.max(energies)+1])
+tx = ax.set_title('Energy of circles + noise minus noise, scale = '+str(np.round(delta,1))+" sigma")
+ani = animation.FuncAnimation(fig=fig, func=update, frames=sig_size, interval=200)
+ani.save(filename=path+"\\Output\\Random_circle_minus_noise_energies_animation_20.gif", writer='ffmpeg',codec="libx264")
+"""
+
 #cube.save_layers(unit='pixels')
 #cube.save_FITS()
 en = cube.calc_energies(unit='pixels')
@@ -86,8 +112,8 @@ plt.ylabel(r'Wavelet Energy Difference ', fontsize=11)
 plt.title('PetHat Wavelet Energies - noise + circles R='+str(diameter)+' - only noise', fontsize=11)
 plt.savefig(path+'\\Output\\pethat_energy_smooth_circles_'+str(det_lim)+'sig.png', dpi=300)
 #plt.show()
-
 """
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 
