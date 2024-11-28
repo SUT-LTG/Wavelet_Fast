@@ -50,7 +50,7 @@ path = str(pathlib.Path(__file__).parent.resolve())
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 # Testing some properties 
-
+"""
 num = 300
 diameter = 14
 num_circles = 10
@@ -84,7 +84,7 @@ en_noise = cube1.calc_energies(do_plot=False)
 for i in range(sig_size):
     for j in range(num_ensemble):
         cube = pethat_wavelet_scale_analysis('Random_Circle_'+str(i)+'_'+str(j) ,'random_circles_'+str(i)+'_'+str(j)+'.fits', scales_in = [2, 50, 0.8], scales_type="triplet", pixel_scale=4, distance=100000)
-        energies[i] += cube.calc_energies(do_plot=False) - en_noise
+        energies[i] += cube.calc_energies(do_plot=False) #- en_noise
 energies = energies/num_ensemble
 
 def update(frame):
@@ -96,22 +96,10 @@ img, = ax.plot(cube1.scales,energies[0], animated=True)
 ax.set_xlabel(r'Scale (pixels)', fontsize=11)
 ax.set_ylabel(r'Wavelet Energy of random circles', fontsize=11)
 ax.set_ylim([np.min(energies),np.max(energies)+1])
-tx = ax.set_title('Energy of circles + noise minus noise, scale = '+str(np.round(delta,1))+" sigma")
+tx = ax.set_title('Energy of circles + noise, scale = '+str(np.round(delta,1))+" sigma")
 ani = animation.FuncAnimation(fig=fig, func=update, frames=sig_size, interval=200)
-ani.save(filename=path+"\\Output\\Random_circle_minus_noise_energies_animation_20.gif", writer='ffmpeg',codec="libx264")
-"""
+ani.save(filename=path+"\\Output\\Random_circle_noise_energies_animation_20.gif", writer='ffmpeg',codec="libx264")
 
-#cube.save_layers(unit='pixels')
-#cube.save_FITS()
-en = cube.calc_energies(unit='pixels')
-en1 = cube1.calc_energies(unit='pixels',do_plot=False)
-#cube.create_gif(unit='pixels')
-plt.plot(cube.scales,en-en1)
-plt.xlabel(r'Scale (pixels)', fontsize=11)
-plt.ylabel(r'Wavelet Energy Difference ', fontsize=11)
-plt.title('PetHat Wavelet Energies - noise + circles R='+str(diameter)+' - only noise', fontsize=11)
-plt.savefig(path+'\\Output\\pethat_energy_smooth_circles_'+str(det_lim)+'sig.png', dpi=300)
-#plt.show()
 """
 
 

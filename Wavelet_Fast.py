@@ -40,16 +40,16 @@ def preprocess(name,filename,crop_cor = []):
     og = kont
 
     # Creates a new folder if necessary
-    #newpath = path+'\\'+ 'Output/'+ name
-    #if not os.path.exists(newpath):
-    #    os.makedirs(newpath)
+    newpath = path+'\\'+ 'Output/'+ name
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
     
     # Plot and save the image of the object
     plt.clf()
     plt.imshow(kont, origin='lower', interpolation='nearest')
     plt.title("Normalized "+name)
     plt.colorbar()
-    #plt.savefig(path+"\\"+outname +'original.png', dpi=200)
+    plt.savefig(path+"\\"+outname +'original.png', dpi=200)
     #plt.show()
     plt.clf()
 
