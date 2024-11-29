@@ -25,18 +25,18 @@ def save_array_as_FITS(array,filename):
     hdu_new.writeto(path+'\\data\\'+filename+'.fits',overwrite=True)
     return
 
-def preprocess(name,filename,crop_cor = []):
+def preprocess(name,filename,crop_cor = [],main_hdu=0):
     # Retrieves observational data
     outname = 'Output/'+name+'/'+name+'_'
     adata = fits.open(path+'\\data\\'+filename)
-    a = adata[0].data
+    a = adata[main_hdu].data
     
     # Crop the image if it's required
     if crop_cor != []:
         a=a[crop_cor[0][0]:crop_cor[0][1],crop_cor[1][0]:crop_cor[1][1]]
 
     kont = np.array(a.astype(float))
-    #kont = kont/np.max(kont)  # Normalize to 1
+    kont = kont/np.max(kont)  # Normalize to 1
     og = kont
 
     # Creates a new folder if necessary
@@ -85,7 +85,7 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False):  # placeholder for pixel scale and distance
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False, main_hdu=0):  # placeholder for pixel scale and distance
     scales_types = ["triplet", "array"]
     if scales_type not in scales_types:
         raise ValueError("Invalid scale type. Expected one of: %s" % scales_types)
@@ -93,7 +93,7 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1],
     end_str = "Wavelet scale analysis of "+name+" has finished."
 
     print(begin_str)
-    kont, nx, ny, og = preprocess(name,filename,crop_cor)
+    kont, nx, ny, og = preprocess(name,filename,crop_cor,main_hdu)
 
     if full:
         # Produces a complete FFT of the image
@@ -115,7 +115,7 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1],
     if scales_type == "array":
         en_scales = scales_in
         n = len(en_scales)
-    wavelet_coeffs = np.clongdouble(np.zeros((n,nx,ny)))
+    wavelet_coeffs = np.cfloat(np.zeros((n,nx,ny)))
 
     # Calculates the wavelet coefficients for all the scales
     with alive_bar(n) as bar: 
@@ -212,7 +212,7 @@ class wavelet_results:
         for i in range(len(self.cube)):
             plt.imshow(np.real(self.cube[i]), origin='lower', interpolation='nearest')
             plt.colorbar()
-            plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=12)
+            plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=10)
             plt.savefig(path+"\\"+self.outname +'wavelet_pethat_fast_'+str(i+1)+'.png', dpi=300)
             plt.clf()
         print("DONE")

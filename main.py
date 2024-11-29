@@ -12,15 +12,15 @@ path = str(pathlib.Path(__file__).parent.resolve())
 
 #kont, outname, nx, ny = preprocess('DDO168_V', 'starless_backgroundless_d168.fit')
 
-
+"""First Test"""
 #cube = pethat_wavelet_scale_analysis('M51_V' ,'m51.fits', scales_in = [2, 100, 1], scales_type="triplet", pixel_scale=4, distance=100000)
 ##cube.save_layers(unit='pixels')
 #cube.save_FITS()
 #cube.calc_energies(unit='pixels')
 #cube.create_gif(unit='pixels')
-#
-#
-#
+
+
+"""Testing the cross-correlation"""
 #cube_a = pethat_wavelet_scale_analysis('DD069_V', 'starless_backgroundless_d69_V.fit', [[300,700],[200,600]], scales_in = [2, 100, 1], scales_type="triplet", pixel_scale=1.134, distance=800000)
 ##cube_a.save_layers()
 #cube_a.save_FITS()
@@ -36,6 +36,23 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #plot_correlation(cube_a,cube_b)
 
 
+"""Testing large data"""
+#cube = pethat_wavelet_scale_analysis('M74_IR', 'JWST-M74-f444w_fixed.fits', scales_in = [10, 50, 8], scales_type="triplet")
+#cube.save_layers()
+#cube.save_FITS()
+#cube.calc_energies()
+#cube.create_gif()
+
+"""Testing data of M74"""
+#cube = pethat_wavelet_scale_analysis('M74_Amateur', 'starless_m74_ama.fit', scales_in = [5, 150, 1], scales_type="triplet")
+#cube.save_layers()
+#cube.calc_energies()
+#cube.create_gif()
+
+cube = pethat_wavelet_scale_analysis('M74_Unknown', 'starless_m74_unknown.fit', scales_in = [5, 50, 10], scales_type="triplet")
+cube.save_layers()
+cube.calc_energies()
+cube.create_gif()
 
 
 #(nx,ny) = (300,300)
@@ -48,8 +65,9 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #plt.savefig(path+"\\"+outname +'original.png', dpi=200)
 ##plt.show()
 
-#--------------------------------------------------------------------------------------------------------------------------------------------------
-# Testing some properties 
+"""--------------------------------------------------------------------------------------------------------------------------------------------------"""
+# Testing the effect of noise in the detection of important scales
+
 """
 num = 300
 diameter = 14
@@ -104,6 +122,7 @@ ani.save(filename=path+"\\Output\\Random_circle_noise_energies_animation_20.gif"
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
+" Some old tests " 
 
 #nx = 1000
 #ny = 1000
