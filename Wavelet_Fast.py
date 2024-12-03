@@ -36,9 +36,9 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0):
         a=a[crop_cor[0][0]:crop_cor[0][1],crop_cor[1][0]:crop_cor[1][1]]
 
     kont = np.array(a.astype(float))
-    kont = kont/np.max(kont)  # Normalize to 1
+    #kont = kont/np.max(kont)  # Normalize to 1
     og = kont
-
+    """
     # Creates a new folder if necessary
     newpath = path+'\\'+ 'Output/'+ name
     if not os.path.exists(newpath):
@@ -52,7 +52,7 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0):
     plt.savefig(path+"\\"+outname +'original.png', dpi=200)
     #plt.show()
     plt.clf()
-
+    """
     # Zero-padding the image to a square to reduce the complications with Pet Hat later on
     ny = kont[0,:].size
     nx = kont[:,0].size
