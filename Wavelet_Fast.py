@@ -36,7 +36,7 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0):
         a=a[crop_cor[0][0]:crop_cor[0][1],crop_cor[1][0]:crop_cor[1][1]]
 
     kont = np.array(a.astype(float))
-    #kont = kont/np.max(kont)  # Normalize to 1
+    kont = kont/np.max(kont)  # Normalize to 1
     og = kont
     """
     # Creates a new folder if necessary
@@ -218,7 +218,7 @@ class wavelet_results:
         print("DONE")
         return
 
-    def calc_energies(self, do_plot=True, unit = 'pixels'):
+    def calc_energies(self, do_plot=True, do_show=False, unit = 'pixels'):
         energies = np.zeros(len(self.cube))
         for i in range(len(self.cube)):
             energies[i] = np.sum(np.abs(self.cube[i])**2)
@@ -229,7 +229,8 @@ class wavelet_results:
             plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=11)
             plt.title('PetHat Wavelet Energies', fontsize=12)
             plt.savefig(path+'\\'+self.outname+'pethat_energy_smooth.png', dpi=300)
-            #plt.show()
+            if do_show:
+                plt.show()
             plt.clf()
         return energies
     
@@ -259,7 +260,7 @@ def give_names(str_a,str_b): # This function extracts the name of the object and
         name+=(str_a[i])  
     return name , str_a, str_b
 
-def plot_correlation(cube_a, cube_b, unit='pixels'): # This function gets two result objects and if they are compatible, plots their scale cross-correlation over scale
+def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This function gets two result objects and if they are compatible, plots their scale cross-correlation over scale
     energies_a = cube_a.calc_energies(do_plot=False)
     energies_b = cube_b.calc_energies(do_plot=False)
     if (not np.allclose(cube_a.scales,cube_b.scales)) or np.shape(cube_a.cube) != np.shape(cube_b.cube):
@@ -281,6 +282,7 @@ def plot_correlation(cube_a, cube_b, unit='pixels'): # This function gets two re
     plt.ylabel(r'Correlation', fontsize=12)
     plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=12)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
-    #plt.show()
+    if do_show:
+        plt.show()
     plt.clf()
     return
