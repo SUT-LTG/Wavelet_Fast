@@ -25,7 +25,7 @@ def save_array_as_FITS(array,filename):
     hdu_new.writeto(path+'\\data\\'+filename+'.fits',overwrite=True)
     return
 
-def preprocess(name,filename,crop_cor = [],main_hdu=0):
+def preprocess(name,filename,crop_cor = [],main_hdu=0,normalize=True):
     # Retrieves observational data
     outname = 'Output/'+name+'/'+name+'_'
     adata = fits.open(path+'\\data\\'+filename)
@@ -36,9 +36,9 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0):
         a=a[crop_cor[0][0]:crop_cor[0][1],crop_cor[1][0]:crop_cor[1][1]]
 
     kont = np.array(a.astype(float))
-    kont = kont/np.max(kont)  # Normalize to 1
+    if normalize:
+        kont = kont/np.max(kont)  # Normalize to 1
     og = kont
-    """
     # Creates a new folder if necessary
     newpath = path+'\\'+ 'Output/'+ name
     if not os.path.exists(newpath):
@@ -47,12 +47,15 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0):
     # Plot and save the image of the object
     plt.clf()
     plt.imshow(kont, origin='lower', interpolation='nearest')
-    plt.title("Normalized "+name)
+    if normalize:
+        plt.title("Normalized "+name)
+    else:
+        plt.title(name)
     plt.colorbar()
     plt.savefig(path+"\\"+outname +'original.png', dpi=200)
     #plt.show()
     plt.clf()
-    """
+    
     # Zero-padding the image to a square to reduce the complications with Pet Hat later on
     ny = kont[0,:].size
     nx = kont[:,0].size
@@ -85,7 +88,7 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False, main_hdu=0):  # placeholder for pixel scale and distance
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False, main_hdu=0,normalize = True):  # placeholder for pixel scale and distance
     scales_types = ["triplet", "array"]
     if scales_type not in scales_types:
         raise ValueError("Invalid scale type. Expected one of: %s" % scales_types)
@@ -93,7 +96,7 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1],
     end_str = "Wavelet scale analysis of "+name+" has finished."
 
     print(begin_str)
-    kont, nx, ny, og = preprocess(name,filename,crop_cor,main_hdu)
+    kont, nx, ny, og = preprocess(name,filename,crop_cor,main_hdu,normalize)
 
     if full:
         # Produces a complete FFT of the image

@@ -2,7 +2,7 @@ from Wavelet_Fast import *
 
 import numpy as np
 import matplotlib
-from scipy import stats
+from scipy import stats, signal, ndimage
 from astropy.io import fits
 
 path = str(pathlib.Path(__file__).parent.resolve())
@@ -11,7 +11,7 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #------------------------------
 
 
-"""Testing large data"""
+"""Testing for large data"""
 #cube = pethat_wavelet_scale_analysis('M74_IR', 'JWST-M74-f444w_fixed.fits', scales_in = [10, 50, 8], scales_type="triplet")
 #cube.save_layers()
 #cube.save_FITS()
@@ -19,12 +19,12 @@ path = str(pathlib.Path(__file__).parent.resolve())
 #cube.create_gif()
 
 """Testing data of M74"""
-#cube = pethat_wavelet_scale_analysis('M74_Amateur', 'starless_m74_ama.fit', scales_in = [5, 150, 1], scales_type="triplet")
+#cube = pethat_wavelet_scale_analysis('M74_Amateur', 'starless_m74_ama.fit', scales_in = [5, 100, 3], scales_type="triplet")
 #cube.save_layers()
 #cube.calc_energies()
 #cube.create_gif()
 
-#cube = pethat_wavelet_scale_analysis('M74_g', 'starless_m74_unknown.fit', scales_in = [5, 50, 10], scales_type="triplet")
+#cube = pethat_wavelet_scale_analysis('M74_g', 'starless_m74_g.fit', scales_in = [5, 0, 10], scales_type="triplet")
 #cube.save_layers()
 #cube.calc_energies()
 #cube.create_gif()
