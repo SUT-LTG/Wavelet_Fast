@@ -289,3 +289,30 @@ def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This fun
         plt.show()
     plt.clf()
     return
+
+
+def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,crop_cors,unit,colors=[]):
+    n = len(paths)
+    scales_array = np.empty(n,dtype=object)
+    energies = np.empty(n,dtype=object)
+
+    for i in range(n):
+        cube = pethat_wavelet_scale_analysis(names[i], paths[i],crop_cors[i], scales[i], scales_type=scale_types[i],pixel_scale=pixelscales[i],distance=distance)
+        scales_array[i] = cube.scales*cube.unit_conv(unit)
+        energies[i] = cube.calc_energies(unit=unit,do_plot=False)
+
+    main_name,a,b =give_names(names[0],names[1]) 
+    plt.figure()
+    if colors == []:
+        for i in range(n):
+            plt.plot(scales_array[i],energies[i],label=names[i],marker=".")
+    else:
+        for i in range(n):
+            plt.plot(scales_array[i],energies[i],label=names[i],color=colors[i],marker=".")
+    plt.title('Wavelet Energies of '+main_name+' in Different Scales and Filters')
+    plt.xlabel('Scale ('+unit+')')
+    plt.ylabel('Wavelet Energy')
+    plt.legend()
+    plt.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_scales.png', dpi=400)
+    plt.show()
+    
