@@ -253,15 +253,7 @@ class wavelet_results:
 #----------------- Wavelet Scale Cross-Correlation ---------------
 #-----------------------------------------------------------------
 
-def give_names(str_a,str_b): # This function extracts the name of the object and the filters for the cross-correlation function
-    name = ''
-    for i in range(len(str_a)):
-        if str_a[i] == '_':
-            str_a = str_a[i+1:]
-            str_b = str_b[i+1:]
-            break
-        name+=(str_a[i])  
-    return name , str_a, str_b
+
 
 def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This function gets two result objects and if they are compatible, plots their scale cross-correlation over scale
     energies_a = cube_a.calc_energies(do_plot=False)
@@ -269,7 +261,7 @@ def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This fun
     if (not np.allclose(cube_a.scales,cube_b.scales)) or np.shape(cube_a.cube) != np.shape(cube_b.cube):
         print('Error: Cubes are not compatible.')
         return
-    obj_name,filt_a,filt_b = give_names(cube_a.name,cube_b.name)
+    obj_name,[filt_a,filt_b] = give_names([cube_a.name,cube_b.name])
     print("The normal correlation between the maps is: ", (np.sum( cube_a.original * np.conjugate(cube_b.original) )/np.sqrt( np.sum(np.abs(cube_a.original)**2) * np.sum(np.abs(cube_b.original)**2) )))
     (n,nx,ny) = np.shape(cube_a.cube)
     
@@ -290,6 +282,15 @@ def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This fun
     plt.clf()
     return
 
+def give_names(strs): # This function extracts the name of the object and the filters
+    name = ''
+    for i in range(len(strs[0])):
+        if strs[0][i] == '_':
+            for j in range(len(strs)):
+                strs[j] = strs[j][i+1:]
+            break
+        name+=(strs[0][i])  
+    return name , strs
 
 def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,crop_cors,unit,colors=[]):
     n = len(paths)
@@ -301,18 +302,18 @@ def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,c
         scales_array[i] = cube.scales*cube.unit_conv(unit)
         energies[i] = cube.calc_energies(unit=unit,do_plot=False)
 
-    main_name,a,b =give_names(names[0],names[1]) 
+    main_name, filters = give_names(names) 
     plt.figure()
     if colors == []:
         for i in range(n):
-            plt.plot(scales_array[i],energies[i],label=names[i],marker=".")
+            plt.plot(scales_array[i],energies[i],label=filters[i],marker=".")
     else:
         for i in range(n):
-            plt.plot(scales_array[i],energies[i],label=names[i],color=colors[i],marker=".")
+            plt.plot(scales_array[i],energies[i],label=filters[i],color=colors[i],marker=".")
     plt.title('Wavelet Energies of '+main_name+' in Different Scales and Filters')
     plt.xlabel('Scale ('+unit+')')
     plt.ylabel('Wavelet Energy')
     plt.legend()
-    plt.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_scales.png', dpi=400)
+    plt.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
     plt.show()
     
