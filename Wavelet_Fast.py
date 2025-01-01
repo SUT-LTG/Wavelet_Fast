@@ -118,7 +118,7 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1],
     if scales_type == "array":
         en_scales = scales_in
         n = len(en_scales)
-    wavelet_coeffs = np.cfloat(np.zeros((n,nx,ny)))
+    wavelet_coeffs = np.complex128(np.zeros((n,nx,ny)))
 
     # Calculates the wavelet coefficients for all the scales
     with alive_bar(n) as bar: 
