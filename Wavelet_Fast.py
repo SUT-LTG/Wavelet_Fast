@@ -303,17 +303,24 @@ def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,c
         energies[i] = cube.calc_energies(unit=unit,do_plot=False)
 
     main_name, filters = give_names(names) 
-    plt.figure()
+
+    gridspec_kw = dict(hspace=0)
+    fig, axes = plt.subplots(nrows=n, ncols=1, sharex=True, gridspec_kw=gridspec_kw, figsize=(8,8))
+
     if colors == []:
+        cmap = plt.get_cmap('rainbow', n)
         for i in range(n):
-            plt.plot(scales_array[i],energies[i],label=filters[i],marker=".")
+            axes[i].plot(scales_array[i],energies[i],label=filters[i],color=cmap(i),marker=".")
     else:
         for i in range(n):
-            plt.plot(scales_array[i],energies[i],label=filters[i],color=colors[i],marker=".")
-    plt.title('Wavelet Energies of '+main_name+' in Different Scales and Filters')
-    plt.xlabel('Scale ('+unit+')')
-    plt.ylabel('Wavelet Energy')
-    plt.legend()
-    plt.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
+            axes[i].plot(scales_array[i],energies[i],label=filters[i],color=colors[i],marker=".")
+    
+    fig.suptitle('Wavelet Energies of '+main_name+' in Different Scales and Filters')
+    fig.supxlabel('Scale ('+unit+')')
+    fig.supylabel('Wavelet Energy')
+    fig.legend(loc=7)
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.8)
+    fig.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
     plt.show()
     
