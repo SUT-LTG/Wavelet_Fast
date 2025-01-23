@@ -25,7 +25,7 @@ def save_array_as_FITS(array,filename):
     hdu_new.writeto(path+'\\data\\'+filename+'.fits',overwrite=True)
     return
 
-def preprocess(name,filename,crop_cor = [],main_hdu=0,normalize=True):
+def preprocess(name,filename,crop_cor = [],main_hdu=0,normalize=True,set_min_to_zero=True):
     # Retrieves observational data
     outname = 'Output/'+name+'/'+name+'_'
     adata = fits.open(path+'\\data\\'+filename)
@@ -38,6 +38,8 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0,normalize=True):
     kont = np.array(a.astype(float))
     if normalize:
         kont = kont/np.max(kont)  # Normalize to 1
+    if normalize and set_min_to_zero:
+        kont = (kont-np.min(kont))/np.max(kont-np.min(kont))
     og = kont
     # Creates a new folder if necessary
     newpath = path+'\\'+ 'Output/'+ name
@@ -88,7 +90,7 @@ def pethat_phi_func(data,a_scale): # Builds an array of a 2d Pet Hat map using s
 #-----------------------------------------------------------------
 
 
-def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False, main_hdu=0,normalize = True):  # placeholder for pixel scale and distance
+def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1], scales_type = "triplet", pixel_scale = 1, distance = 1 , full = False, main_hdu=0,normalize = True,set_min=True):  # placeholder for pixel scale and distance
     scales_types = ["triplet", "array"]
     if scales_type not in scales_types:
         raise ValueError("Invalid scale type. Expected one of: %s" % scales_types)
@@ -96,7 +98,7 @@ def pethat_wavelet_scale_analysis(name,filename,crop_cor=[],scales_in=[2,100,1],
     end_str = "Wavelet scale analysis of "+name+" has finished."
 
     print(begin_str)
-    kont, nx, ny, og = preprocess(name,filename,crop_cor,main_hdu,normalize)
+    kont, nx, ny, og = preprocess(name,filename,crop_cor,main_hdu,normalize,set_min_to_zero=set_min)
 
     if full:
         # Produces a complete FFT of the image
@@ -189,6 +191,7 @@ class wavelet_results:
 
         ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,self.name), frames=len(self.cube)-1, interval=100)
         ani.save(filename=path+"\\"+self.outname +'animation.gif', writer='ffmpeg',codec="libx264")
+        plt.clf()
         print("DONE")
         return
     
@@ -274,6 +277,7 @@ def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This fun
     plt.clf()
     plt.errorbar(cube_a.scales*cube_a.unit_conv(unit),corr,yerr = corr_err,fmt = '.')
     plt.xlabel(r'Scale ('+unit+')', fontsize=12)
+    plt.ylim((np.min(np.append(0,corr-corr_err)),np.max(np.append(1,corr+corr_err))))
     plt.ylabel(r'Correlation', fontsize=12)
     plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=12)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
@@ -292,7 +296,7 @@ def give_names(strs): # This function extracts the name of the object and the fi
         name+=(strs[0][i])  
     return name , strs
 
-def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,crop_cors,unit,colors=[]):
+def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,crop_cors,unit,colors=[],save_results=False):
     n = len(paths)
     scales_array = np.empty(n,dtype=object)
     energies = np.empty(n,dtype=object)
@@ -301,6 +305,10 @@ def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,c
         cube = pethat_wavelet_scale_analysis(names[i], paths[i],crop_cors[i], scales[i], scales_type=scale_types[i],pixel_scale=pixelscales[i],distance=distance)
         scales_array[i] = cube.scales*cube.unit_conv(unit)
         energies[i] = cube.calc_energies(unit=unit,do_plot=False)
+        if save_results:
+            cube.save_layers(unit=unit)
+            cube.create_gif(unit=unit)
+
 
     main_name, filters = give_names(names) 
 
@@ -324,3 +332,40 @@ def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,c
     fig.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
     plt.show()
     
+def data_batch_energy_plot_cube(cubes,unit,colors=[],save_results=False):
+    n = len(cubes)
+    scales_array = np.empty(n,dtype=object)
+    energies = np.empty(n,dtype=object)
+    names = []
+
+    for i in range(n):
+        cube = cubes[i]
+        scales_array[i] = cube.scales*cube.unit_conv(unit)
+        energies[i] = cube.calc_energies(unit=unit,do_plot=False)
+        names.append(cube.name)
+        if save_results:
+            cube.save_layers(unit=unit)
+            cube.create_gif(unit=unit)
+
+
+    main_name, filters = give_names(names) 
+
+    gridspec_kw = dict(hspace=0)
+    fig, axes = plt.subplots(nrows=n, ncols=1, sharex=True, gridspec_kw=gridspec_kw, figsize=(8,8))
+
+    if colors == []:
+        cmap = plt.get_cmap('rainbow', n)
+        for i in range(n):
+            axes[i].plot(scales_array[i],energies[i],label=filters[i],color=cmap(i),marker=".")
+    else:
+        for i in range(n):
+            axes[i].plot(scales_array[i],energies[i],label=filters[i],color=colors[i],marker=".")
+    
+    fig.suptitle('Wavelet Energies of '+main_name+' in Different Scales and Filters')
+    fig.supxlabel('Scale ('+unit+')')
+    fig.supylabel('Wavelet Energy')
+    fig.legend(loc=7)
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.8)
+    fig.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
+    plt.show()
