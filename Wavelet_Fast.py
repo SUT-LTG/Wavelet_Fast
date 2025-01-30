@@ -47,10 +47,15 @@ def preprocess(name,filename,crop_cor = [],main_hdu=0,normalize=True,set_min_to_
         os.makedirs(newpath)
     
     # Plot and save the image of the object
+    obj_name, [filter_name] = give_names([name])
     plt.clf()
     plt.imshow(kont, origin='lower', interpolation='nearest')
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.xlabel('X (pixels)')
+    plt.ylabel('Y (pixels)')
     if normalize:
-        plt.title("Normalized "+name)
+        plt.title("Normalized Image of "+obj_name+ " in " + filter_name, fontsize=12)
     else:
         plt.title(name)
     plt.colorbar()
@@ -176,20 +181,25 @@ class wavelet_results:
             raise ValueError("Invalid unit. Expected one of: %s" % ['pixels','arcsec','arcmin','pc','kpc'])
         
     def create_gif(self,unit='pixels'):
-        def update(frame,cube,scales,name):
+        def update(frame,cube,scales,name,filt):
             img.set_array(cube[frame])
-            tx.set_text('PetHat wavelet animation of ' + name + ', scale = '+str(np.round(scales[frame]*self.unit_conv(unit),3))+' '+ unit)
+            tx.set_text('PetHat wavelet coefficients of ' + name +' in ' + filt + '\n scale = '+str(np.round(scales[frame]*self.unit_conv(unit),3))+' '+ unit)
         
         print("Creating GIF from the coefficients of "+self.name+" ... ",end="")
 
         our_data = np.real(self.cube)
         fig = plt.figure(dpi=300)
         ax = fig.add_subplot(1,1,1)
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=12)
+        ax.set_xlabel('X (pixels)')
+        ax.set_ylabel('Y (pixels)')
         img = ax.imshow(our_data[0], origin='lower', interpolation='nearest',vmin=np.min(our_data), vmax=np.max(our_data), animated=True)
         cb = fig.colorbar(img)
-        tx = ax.set_title('PetHat wavelet animation of ' + self.name + ', scale = '+str(np.round(self.scales[0]*self.unit_conv(unit),3))+' '+ unit, fontsize=12)
+        tx = ax.set_title('PetHat Wavelet Coefficients of ' + self.name + '\n Scale = '+str(np.round(self.scales[0]*self.unit_conv(unit),3))+' '+ unit, fontsize=12)
 
-        ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,self.name), frames=len(self.cube)-1, interval=100)
+        obj_name, [filter_name] = give_names([self.name])
+        ani = animation.FuncAnimation(fig=fig, func=update, fargs=(our_data,self.scales,obj_name,filter_name), frames=len(self.cube)-1, interval=100)
         ani.save(filename=path+"\\"+self.outname +'animation.gif', writer='ffmpeg',codec="libx264")
         plt.clf()
         print("DONE")
@@ -216,6 +226,10 @@ class wavelet_results:
     def save_layers(self,unit='pixels'):
         print("Saving the layers of "+self.name+" as PNG ... ",end="")
         for i in range(len(self.cube)):
+            plt.xticks(fontsize=12)
+            plt.yticks(fontsize=12)
+            plt.xlabel('X (pixels)')
+            plt.ylabel('Y (pixels)')
             plt.imshow(np.real(self.cube[i]), origin='lower', interpolation='nearest')
             plt.colorbar()
             plt.title('PetHat wavelet coefficient of '+self.name+', scale = '+str(np.round(self.scales[i]*self.unit_conv(unit),3))+' '+ unit, fontsize=10)
@@ -231,8 +245,10 @@ class wavelet_results:
         if do_plot:
             plt.clf()
             plt.plot(self.scales*self.unit_conv(unit),energies)
-            plt.xlabel(r'Scale ('+unit+')', fontsize=11)
-            plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=11)
+            plt.xticks(fontsize=12)
+            plt.yticks(fontsize=12)
+            plt.xlabel(r'Scale ('+unit+')', fontsize=12)
+            plt.ylabel(r'Wavelet Energy of '+self.name, fontsize=12)
             plt.title('PetHat Wavelet Energies', fontsize=12)
             plt.savefig(path+'\\'+self.outname+'pethat_energy_smooth.png', dpi=300)
             if do_show:
@@ -279,6 +295,8 @@ def plot_correlation(cube_a, cube_b, unit='pixels', do_show = False): # This fun
     plt.xlabel(r'Scale ('+unit+')', fontsize=12)
     plt.ylim((np.min(np.append(0,corr-corr_err)),np.max(np.append(1,corr+corr_err))))
     plt.ylabel(r'Correlation', fontsize=12)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.title(r'Scale Correlation of '+obj_name+' in '+filt_a+' and '+filt_b+' Filters', fontsize=12)
     plt.savefig(path+'\\'+'Output/'+obj_name+'_'+filt_a+'_'+filt_b+'_pethat_corr_smooth.png', dpi=400)
     if do_show:
@@ -319,13 +337,17 @@ def data_batch_energy_plot(paths,names,scales,pixelscales,distance,scale_types,c
         cmap = plt.get_cmap('rainbow', n)
         for i in range(n):
             axes[i].plot(scales_array[i],energies[i],label=filters[i],color=cmap(i),marker=".")
+            axes[i].tick_params(axis='x', labelsize=12)
+            axes[i].tick_params(axis='y', labelsize=12)
     else:
         for i in range(n):
             axes[i].plot(scales_array[i],energies[i],label=filters[i],color=colors[i],marker=".")
+            axes[i].tick_params(axis='x', labelsize=12)
+            axes[i].tick_params(axis='y', labelsize=12)
     
-    fig.suptitle('Wavelet Energies of '+main_name+' in Different Scales and Filters')
-    fig.supxlabel('Scale ('+unit+')')
-    fig.supylabel('Wavelet Energy')
+    fig.suptitle('Wavelet Energies of '+main_name+' in Different Scales and Filters',fontsize=12)
+    fig.supxlabel('Scale ('+unit+')',fontsize=12)
+    fig.supylabel('Wavelet Energy',fontsize=12)
     fig.legend(loc=7)
     fig.tight_layout()
     fig.subplots_adjust(right=0.8)
@@ -369,3 +391,33 @@ def data_batch_energy_plot_cube(cubes,unit,colors=[],save_results=False):
     fig.subplots_adjust(right=0.8)
     fig.savefig(path+'\\'+'Output/'+main_name+'_pethat_energies_all_filters.png', dpi=400)
     plt.show()
+
+def plot_five_coeffs(path,name,crop,unit,scale,pixelscale,distance=100000):
+    cube = pethat_wavelet_scale_analysis(name, path, crop, scales_in = scale, scales_type="array", pixel_scale=pixelscale, distance=distance)
+    fig = plt.figure(layout='constrained', figsize=(10, 9.5))
+    subfigs = fig.subfigures(1, 1, wspace=0.07)
+    our_data = np.append(np.real(cube.cube),[np.real(cube.original)],axis=0)
+    axes = subfigs.subplots(2, 3, sharey=True)
+    ax = axes[0][0]
+    im = ax.imshow(our_data[5], origin='lower', interpolation='nearest', cmap='gray', vmin=0, vmax=1)
+    cb = fig.colorbar(im, shrink=0.6, ax=ax, location='left')
+    ax.set_title('Original Image', fontsize='x-large')
+    ax.set_xlabel("X (pixels)")
+    ax.set_ylabel("Y (pixels)")
+    cb.set_label('Normalized Intensity')
+    for i in range(len(cube.scales)):
+        ax = axes[(i+1)//3][(i+1)%3]
+        im = ax.imshow(our_data[i], origin='lower', interpolation='nearest', vmin=np.min(np.real(cube.cube)), vmax=np.max(np.real(cube.cube)))
+        ax.set_title('scale = '+str(np.round(cube.scales[i]*cube.unit_conv(unit),3))+' '+ unit, fontsize='x-large')
+        ax.set_xlabel("X (pixels)")
+        if i==2:
+            cb = fig.colorbar(im, shrink=0.6, ax=ax, location='left')
+            cb.set_label('Wavelet Coefficient Values')
+            ax.set_ylabel("Y (pixels)")
+
+    name, [filt] = give_names([cube.name])
+    fig.suptitle('PetHat wavelet coefficient of '+name+' in '+filt, fontsize='xx-large')
+
+    plt.show()
+
+
